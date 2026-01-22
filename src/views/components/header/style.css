@@ -1,0 +1,11 @@
+.header{
+    @apply flex items-center justify-between p-4 bg-white shadow-lg rounded-xl;
+}
+
+.header-logo{
+    @apply p-2 rounded-full hover:bg-[#efedff];
+}
+
+.header-icon{
+    @apply w-10 h-10 rounded-full overflow-hidden bg-gray-300;
+}

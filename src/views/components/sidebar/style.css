@@ -1,0 +1,53 @@
+
+.sidebarContainer {
+  @apply bg-white text-gray-800 fixed h-screen w-64 z-10 rounded-xl shadow-lg mr-4 transition-all duration-300;
+}
+
+@media (max-width: 1024px) {
+  .sidebarContainer {
+    @apply w-56; 
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebarContainer {
+    @apply w-40;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebarContainer {
+    @apply w-24; 
+  }
+}
+
+.sidebar-header {
+  @apply flex items-center space-y-6 mb-8 p-4;
+}
+
+.brandContainer {
+  @apply flex items-center space-x-2;
+}
+
+.brandName {
+  @apply text-xl font-bold text-gray-800;
+}
+
+.nav {
+  padding: 1rem;
+}
+
+.section {
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  @apply text-gray-600 text-xs font-bold mb-2;
+}
+
+.navLink {
+  @apply flex items-center space-x-3 text-gray-800 hover:bg-[#efedff] p-2 rounded-lg;
+}
+.navLink span {
+  @apply truncate; 
+}

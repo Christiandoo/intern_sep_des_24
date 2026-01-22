@@ -1,0 +1,6 @@
+.container-card{
+    @apply bg-white shadow-lg rounded-xl px-4 md:p-6 flex flex-col w-full;
+}
+.title-card{
+    @apply text-lg font-semibold text-left mb-4 tracking-wider;
+}

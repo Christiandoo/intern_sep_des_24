@@ -1,0 +1,35 @@
+{
+  "git": {
+    "commitMessage": "build: [DESTO] release app v${version}"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          { "type": "feat", "section": "Features" },
+          { "type": "fix", "section": "Bug Fixes" },
+          { "type": "chore", "section": "Chore" },
+          { "type": "docs", "section": "Docs" },
+          { "type": "style", "section": "Style" },
+          { "type": "refactor", "section": "Refactoring" },
+          { "type": "build", "section": "Build Apps" }
+        ]
+      },
+      "context": {
+        "linkCompare": false
+      },
+      "infile": "CHANGELOG.md",
+      "gitRawCommitsOpts": {
+        "merges": null
+      }
+    }
+  },
+  "npm": {
+    "skipChecks": true,
+    "publish": false
+  },
+  "hooks": {
+    "after:release": "echo Rilis ${name} telah selesai dengan v.${version}"
+  }
+}
