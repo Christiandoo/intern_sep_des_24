@@ -31,7 +31,13 @@ export async function GET(req: Request) {
     // =========================
     if (userId) {
       const projects = await prisma.project.findMany({
-        where: { userId },
+        where: {
+          assignment: {
+            some: {
+              userId: userId,
+            },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
 
