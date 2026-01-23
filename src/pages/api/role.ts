@@ -1,3 +1,4 @@
+// src/pages/api/role.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { getSession } from "next-auth/react";
@@ -6,22 +7,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const session = await getSession({ req });
-      const userId  =session?.userId; 
+      const userId = session?.user?.id;
 
-      const userRoles = await prisma.userRole.findMany({
-        where: {
-          userId: String(userId), 
-        },
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Ambil roles dari tabel role melalui relasi user
+      const userWithRoles = await prisma.user.findUnique({
+        where: { id: userId },
         select: {
-          role: true, 
+          roles: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
-      if (userRoles.length === 0) {
+      if (!userWithRoles || userWithRoles.roles.length === 0) {
         return res.status(404).json({ error: 'No roles found for this user' });
       }
 
-      res.status(200).json(userRoles);
+      res.status(200).json(userWithRoles.roles);
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error:", {
