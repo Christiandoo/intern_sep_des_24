@@ -42,11 +42,20 @@ export async function DELETE(
       );
     }
 
-    // hapus relasi role dulu
-    await prisma.userRole.deleteMany({
-      where: { userId },
-    });
+   // putuskan relasi role dulu (implicit M2M)
+await prisma.user.update({
+  where: { id: userId },
+  data: {
+    roles: {
+      set: [],
+    },
+  },
+});
 
+// hapus user
+await prisma.user.delete({
+  where: { id: userId },
+});
     // hapus user
     await prisma.user.delete({
       where: { id: userId },

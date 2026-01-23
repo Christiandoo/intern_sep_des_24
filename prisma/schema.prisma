@@ -8,134 +8,133 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-model User {
-  id               String          @id @default(cuid())
-  name             String?
+model user {
+  id               String          @id @db.VarChar(191)
+  name             String?         @db.VarChar(191)
   username         String?         @unique
   email            String?         @unique
   emailVerified    DateTime?
-  image            String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  resetToken       String?
+  image            String?         @db.VarChar(191)
+  createdAt        DateTime        @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  updatedAt        DateTime
+  resetToken       String?         @db.VarChar(191)
   resetTokenExpiry DateTime?
-  passwordHash     String
-  accounts         Account?
-  Authenticator    Authenticator[]
-  sessions         Session[]
-  roles            UserRole[]
-  assignment       Assignment[]
+  passwordHash     String          @db.VarChar(191)
+
+  account          account?
+  assignment       assignment[]
+  authenticator    authenticator[]
+  session          session[]
+
+  roles            role[]          @relation("UserRoles")
 }
 
-model Role {
-  id    String     @id @default(cuid())
-  name  String     @unique
-  users UserRole[]
+model role {
+  id       String   @id
+  name     String   @unique
+
+  users    user[]   @relation("UserRoles")
+  projects project[]
+
+  @@map("roles")
 }
 
-model UserRole {
-  userId   String
-  roleId   String
-  projects Project[]
-  role     Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([userId, roleId])
-  @@index([roleId], map: "UserRole_roleId_fkey")
-}
-
-model Project {
-  id          String       @id @default(cuid())
-  name        String
-  description String?
-  status      Status       @default(PENDING)
-  workOrder   String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+model project {
+  id          String         @id @db.VarChar(191)
+  name        String         @db.VarChar(191)
+  workOrder   String?        @db.VarChar(191)
+  createdAt   DateTime       @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  updatedAt   DateTime
   start       DateTime
   end         DateTime
-  userId      String
-  roleId      String
-  assignments Assignment[]
-  userRole    UserRole     @relation(fields: [userId, roleId], references: [userId, roleId], onDelete: Cascade)
+  description String?        @db.VarChar(191)
+  status      project_status @default(PENDING)
 
-  @@index([userId, roleId])
+  roleId      String
+  role        role           @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignment  assignment[]
 }
 
-model Assignment {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  status      Status    @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model assignment {
+  id          String            @id @db.VarChar(191)
+  title       String            @db.VarChar(191)
+  status      assignment_status @default(PENDING)
+  createdAt   DateTime          @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  description String?           @db.VarChar(191)
   start       DateTime?
   end         DateTime?
+  updatedAt   DateTime
+
   projectId   String
   userId      String
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([projectId], map: "Assignment_projectId_fkey")
+  project     project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        user              @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Account {
-  id                       String   @id @default(cuid())
-  userId                   String   @unique
-  type                     String
-  provider                 String
-  providerAccountId        String
-  refresh_token            String?  @db.Text
-  access_token             String?  @db.Text
+model account {
+  id                       String   @id @db.VarChar(191)
+  userId                   String   @unique @db.VarChar(191)
+  type                     String   @db.VarChar(191)
+  provider                 String   @db.VarChar(191)
+  providerAccountId        String   @db.VarChar(191)
+  refresh_token            String?
+  access_token             String?
   expires_at               Int?
-  token_type               String?
-  scope                    String?
-  id_token                 String?  @db.Text
-  session_state            String?
+  token_type               String?  @db.VarChar(191)
+  scope                    String?  @db.VarChar(191)
+  id_token                 String?
+  session_state            String?  @db.VarChar(191)
   refresh_token_expires_in Int?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-  user                     User     @relation(fields: [userId], references: [id])
+  createdAt                DateTime @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  updatedAt                DateTime
 
-  @@unique([provider, providerAccountId])
-  @@index([userId])
+  user                     user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+model session {
+  id           String   @id @db.VarChar(191)
+  sessionToken String   @unique @db.VarChar(191)
+  userId       String   @db.VarChar(191)
   expires      DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  updatedAt    DateTime
 
-  @@index([userId])
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-model Authenticator {
-  credentialID         String  @unique
-  userId               String
-  providerAccountId    String
-  credentialPublicKey  String
+model authenticator {
+  credentialID         String  @db.VarChar(191)
+  userId               String  @db.VarChar(191)
+  providerAccountId    String  @db.VarChar(191)
+  credentialPublicKey  String  @db.VarChar(191)
   counter              Int
-  credentialDeviceType String
+  credentialDeviceType String  @db.VarChar(191)
   credentialBackedUp   Boolean
-  transports           String?
-  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transports           String? @db.VarChar(191)
+
+  user                 user    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
 }
 
-enum Status {
+model verificationtoken {
+  identifier String   @db.VarChar(191)
+  token      String   @db.VarChar(191)
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+enum assignment_status {
+  PENDING
+  ACTIVE
+  IN_PROGRESS
+  FINISH
+}
+
+enum project_status {
   PENDING
   ACTIVE
   IN_PROGRESS

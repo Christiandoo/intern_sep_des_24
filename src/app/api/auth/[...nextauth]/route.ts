@@ -1,8 +1,14 @@
 export const dynamic = "force-dynamic";
-import NextAuth, { type AuthOptions } from "next-auth";
+import NextAuth, { type AuthOptions, type User as NextAuthUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+
+interface AuthUser {
+  id: string;
+  email: string;
+  roles: string[];
+}
 
 export const authOptions: AuthOptions = {
   session: {
@@ -18,45 +24,33 @@ export const authOptions: AuthOptions = {
       },
 
       async authorize(credentials) {
-        // 🔴 VALIDASI INPUT
         if (!credentials?.email || !credentials.password) {
           throw new Error("MISSING_CREDENTIALS");
         }
 
-        // 🔍 CARI USER
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: {
-            roles: {
-              include: {
-                role: true,
-              },
-            },
-          },
+          include: { roles: true },
         });
 
-        // ❌ EMAIL TIDAK TERDAFTAR
         if (!user) {
           throw new Error("EMAIL TIDAK TERDAFTAR");
         }
 
-        // 🔐 CEK PASSWORD
         const isValidPassword = await bcrypt.compare(
           credentials.password,
           user.passwordHash
         );
 
-        // ❌ PASSWORD SALAH
         if (!isValidPassword) {
           throw new Error("PASSWORD SALAH");
         }
 
-        // ✅ LOGIN BERHASIL
         return {
           id: user.id,
-          email: user.email,
-          roles: user.roles.map((r) => r.role.name),
-        };
+          email: user.email!,
+          roles: user.roles.map((r) => r.name),
+        } as AuthUser;
       },
     }),
   ],
@@ -64,8 +58,9 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user.id;
-        token.roles = (user as any).roles;
+        const authUser = user as AuthUser;
+        token.userId = authUser.id;
+        token.roles = authUser.roles;
       }
       return token;
     },

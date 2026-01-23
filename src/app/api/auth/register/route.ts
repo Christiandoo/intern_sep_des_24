@@ -1,15 +1,16 @@
 export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 
-const ALLOWED_ROLES = ["admin", "manager", "specialist"];
+const ALLOWED_ROLES = ["admin", "manager", "specialist"] as const;
 
 export async function POST(req: Request) {
   try {
     const { username, email, password, role } = await req.json();
 
-    // 1️⃣ Validasi input
     if (!username || !email || !password || !role) {
       return NextResponse.json(
         { message: "All fields are required" },
@@ -24,34 +25,37 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2️⃣ Cek email sudah terdaftar
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
+    // ✅ Cek email
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
       return NextResponse.json(
         { message: "Email already registered" },
         { status: 400 }
       );
     }
 
-    // 3️⃣ Hash password
+    // ✅ Cek username
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return NextResponse.json(
+        { message: "Username already taken" },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4️⃣ Create user + role (SESUAI SCHEMA)
     await prisma.user.create({
       data: {
+        id: randomUUID(),       // WAJIB
         username,
         email,
         passwordHash: hashedPassword,
+        updatedAt: new Date(),  // WAJIB
         roles: {
-          create: {
-            role: {
-              connect: {
-                name: role, // admin | manager | specialist
-              },
-            },
+          connectOrCreate: {
+            where: { name: role },
+            create: { id: randomUUID(), name: role },
           },
         },
       },
@@ -61,10 +65,10 @@ export async function POST(req: Request) {
       { message: "User registered successfully" },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("REGISTER ERROR:", error);
     return NextResponse.json(
-      { message: "Something went wrong" },
+      { message: error.message || "Something went wrong" },
       { status: 500 }
     );
   }

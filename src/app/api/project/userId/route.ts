@@ -21,14 +21,20 @@ export async function GET() {
     }
 
     const projects = await prisma.project.findMany({
-      where: { userId: user.id },
+      where: {
+        assignment: {
+          some: {
+            userId: user.id,
+          },
+        },
+      },
       select: {
-        id:true,
-        name:true,
-        start:true,
-        end:true,
-        description:true,
-       },
+        id: true,
+        name: true,
+        start: true,
+        end: true,
+        description: true,
+      },
     });
 
     return NextResponse.json({ success: true, data: projects, totalProjects: projects.length });

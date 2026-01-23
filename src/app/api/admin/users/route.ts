@@ -1,3 +1,4 @@
+// src/app/api/admin/users/route.ts
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
@@ -8,10 +9,9 @@ import { authOptions } from "@/lib/auth";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
     const roles = session?.roles ?? [];
 
-    // 🔒 HANYA ADMIN
+    // 🔒 ADMIN ONLY
     if (!roles.includes("admin")) {
       return NextResponse.json(
         { message: "Unauthorized" },
@@ -19,16 +19,13 @@ export async function GET() {
       );
     }
 
-    const userRoles = await prisma.userRole.findMany({
+    // ✅ schema kamu: implicit many-to-many user <-> role
+    const users = await prisma.user.findMany({
       select: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            username: true,
-          },
-        },
-        role: {
+        id: true,
+        email: true,
+        username: true,
+        roles: {
           select: {
             name: true,
           },
@@ -36,15 +33,15 @@ export async function GET() {
       },
     });
 
-    // 🔁 FORMAT UNTUK DASHBOARD
-    const users = userRoles.map((ur) => ({
-      id: ur.user.id,
-      email: ur.user.email,
-      username: ur.user.username,
-      roles: [ur.role.name],
+    // format untuk dashboard
+    const result = users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      username: u.username,
+      roles: u.roles.map((r) => r.name),
     }));
 
-    return NextResponse.json(users);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching admin users:", error);
     return NextResponse.json(

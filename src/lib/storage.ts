@@ -14,22 +14,20 @@ export async function uploadFile(file: Blob, folder = "projects/") {
   const fileExt = file.type.split("/")[1];
   const fileName = `${folder}${crypto.randomUUID()}.${fileExt}`;
 
-  const { error } = await supabase.storage
+  const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(fileName, file, {
       upsert: true,
       contentType: file.type,
     });
 
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
-  }
+  if (error) throw new Error(`Upload failed: ${error.message}`);
 
-  const { data } = supabase.storage
-    .from(BUCKET_NAME)
-    .getPublicUrl(fileName);
+  const publicData = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
 
-  return data.publicUrl; // 🔥 INI YANG DISIMPAN KE DB
+  if (!publicData.data?.publicUrl) throw new Error("Failed to get public URL");
+
+  return publicData.data.publicUrl;
 }
 
 /**
@@ -38,14 +36,10 @@ export async function uploadFile(file: Blob, folder = "projects/") {
 export async function deleteFile(fileUrl: string) {
   if (!fileUrl) return;
 
-  const filePath = fileUrl.split(`storage/files/buckets/work-orders/${BUCKET_NAME}/`)[1];
+  const filePath = fileUrl.split(`${BUCKET_NAME}/`)[1];
   if (!filePath) return;
 
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([filePath]);
+  const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath]);
 
-  if (error) {
-    throw new Error(`Delete failed: ${error.message}`);
-  }
+  if (error) throw new Error(`Delete failed: ${error.message}`);
 }

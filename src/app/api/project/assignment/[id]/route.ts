@@ -1,7 +1,8 @@
+// src/app/api/project/assignment/[id]/route.ts
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,28 +16,27 @@ export async function GET(request: NextRequest) {
           message: "ID is required",
           data: null,
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-    console.log("ID from request:", id);
 
     const project = await prisma.project.findUnique({
       where: { id },
-      select:{
-        assignments:{
-            include:{
-                user:{
-                    select:{
-                    username:true
-                }
-
-                }
-            }
-        }
+      select: {
+        assignment: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
+
     if (!project) {
       return NextResponse.json(
         {
@@ -44,33 +44,27 @@ export async function GET(request: NextRequest) {
           message: "Project not found!",
           data: null,
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: "Project details retrieved successfully",
-        data: project,
+        message: "Project assignments retrieved successfully",
+        data: project.assignment,
       },
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
   } catch (error) {
-    console.error("Error retrieving project:", error);
+    console.error("Error retrieving project assignments:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "An error occurred while retrieving the project",
+        message: "An error occurred while retrieving the project assignments",
         data: null,
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

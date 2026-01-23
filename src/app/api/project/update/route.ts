@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +21,6 @@ export async function PATCH(req: NextRequest) {
     const description = formData.get("description") as string | null;
     const dateStarted = formData.get("dateStarted") as string | null;
     const dateEnded = formData.get("dateEnded") as string | null;
-    const userId = formData.get("userId") as string | null;
     const roleId = formData.get("roleId") as string | null;
     const file = formData.get("file") as File | null;
 
@@ -39,14 +37,11 @@ export async function PATCH(req: NextRequest) {
 
     let workOrder = oldProject.workOrder;
 
-    // 🔥 UPLOAD FILE BARU (OPTIONAL)
     if (file && file.size > 0) {
-      // hapus file lama
       if (workOrder) {
         await deleteFile(workOrder);
       }
 
-      // upload file baru
       workOrder = await uploadFile(file, "projects/");
     }
 
@@ -57,7 +52,6 @@ export async function PATCH(req: NextRequest) {
         description: description || undefined,
         start: dateStarted ? new Date(dateStarted) : undefined,
         end: dateEnded ? new Date(dateEnded) : undefined,
-        userId: userId || undefined,
         roleId: roleId || undefined,
         workOrder,
         updatedAt: new Date(),

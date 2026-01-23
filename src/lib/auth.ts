@@ -15,34 +15,27 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
+        if (!credentials?.email || !credentials.password) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
-            roles: {
-              include: {
-                role: true,
-              },
-            },
+            roles: true, // ✅ SESUAI SCHEMA
           },
         });
 
         if (!user) return null;
 
-        const isValidPassword = await bcrypt.compare(
+        const valid = await bcrypt.compare(
           credentials.password,
           user.passwordHash
         );
-
-        if (!isValidPassword) return null;
+        if (!valid) return null;
 
         return {
           id: user.id,
           email: user.email as string,
-          roles: user.roles.map((r) => r.role.name),
+          roles: user.roles.map((r) => r.name), // ✅ STRING[]
         };
       },
     }),
@@ -50,7 +43,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user.id;
+        token.userId = (user as any).id;
         token.roles = (user as any).roles;
       }
       return token;

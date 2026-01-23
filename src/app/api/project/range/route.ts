@@ -27,7 +27,11 @@ export async function GET() {
 
     const projects = await prisma.project.findMany({
       where: {
-        userId: user.id,
+        assignment: {
+          some: {
+            userId: user.id,
+          },
+        },
         OR: [
           {
             start: {

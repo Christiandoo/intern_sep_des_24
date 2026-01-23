@@ -1,79 +1,84 @@
-import { prisma } from '../src/lib/prisma';
-import bcrypt from 'bcryptjs';
+// prisma/seed.ts
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
+const prisma = new PrismaClient()
 
 async function main() {
-  const digitalProdigy = await prisma.role.upsert({
-    where: { name: 'digital prodigy' },
-    update: {},
-    create: {
-      name: 'digital prodigy',
-    },
-  });
+  const password = await bcrypt.hash('password123', 10)
 
-  const specialist = await prisma.role.upsert({
-    where: { name: 'specialist' },
-    update: {},
-    create: {
-      name: 'specialist',
-    },
-  });
+  // ROLES
+  await prisma.role.createMany({
+    data: [
+      { id: 'ADMIN', name: 'Admin' },
+      { id: 'SPECIALIST', name: 'Specialist' },
+      { id: 'MANAGER', name: 'Manager' },
+    ],
+    skipDuplicates: true,
+  })
 
-  const manager = await prisma.role.upsert({
-    where: { name: 'manager' },
-    update: {},
-    create: {
-      name: 'manager',
-    },
-  });
-
-  const password = await bcrypt.hash('password123', 10);
-
-  const users = await prisma.user.createMany({
+  // USERS
+  await prisma.user.createMany({
     data: [
       {
+        id: 'user-admin',
         email: 'digital@gmail.com',
-        username: 'user1',
+        username: 'admin',
         passwordHash: password,
+        updatedAt: new Date(),
       },
       {
+        id: 'user-specialist',
         email: 'specialist@gmail.com',
-        username: 'user2',
+        username: 'specialist',
         passwordHash: password,
+        updatedAt: new Date(),
       },
       {
+        id: 'user-manager',
         email: 'manager@gmail.com',
-        username: 'user3',
+        username: 'manager',
         passwordHash: password,
+        updatedAt: new Date(),
       },
     ],
     skipDuplicates: true,
-  });
+  })
 
-  const user1 = await prisma.user.findUnique({ where: { email: 'digital@gmail.com' } });
-  const user2 = await prisma.user.findUnique({ where: { email: 'specialist@gmail.com' } });
-  const user3 = await prisma.user.findUnique({ where: { email: 'manager@gmail.com' } });
+  // USER ↔ ROLE
+  await prisma.user.update({
+    where: { id: 'user-admin' },
+    data: {
+      roles: {
+        connect: [{ id: 'ADMIN' }],
+      },
+    },
+  })
 
-  if (user1 && user2 && user3) {
-    await prisma.userRole.createMany({
-      data: [
-        { userId: user1.id, roleId: digitalProdigy.id },
-        { userId: user2.id, roleId: specialist.id },
-        { userId: user3.id, roleId: manager.id },
-      ],
-    });
-  } else {
-    console.error("One or more users were not found. Please check the user creation process.");
-  }
-  console.log({ users })
+  await prisma.user.update({
+    where: { id: 'user-specialist' },
+    data: {
+      roles: {
+        connect: [{ id: 'SPECIALIST' }],
+      },
+    },
+  })
+
+  await prisma.user.update({
+    where: { id: 'user-manager' },
+    data: {
+      roles: {
+        connect: [{ id: 'MANAGER' }],
+      },
+    },
+  })
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
+  .catch(e => {
+    console.error(e)
+    process.exit(1)
   })
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

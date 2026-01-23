@@ -1,4 +1,6 @@
+// src/app/api/project/[id]/route.ts
 export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, deleteFile } from "@/lib/storage";
@@ -24,10 +26,19 @@ export async function GET(
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        userRole: {
+        role: {
+          select: {
+            name: true,
+          },
+        },
+        assignment: {
           include: {
             user: {
-              select: { username: true },
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
             },
           },
         },
@@ -79,16 +90,13 @@ export async function PATCH(
     const description = formData.get("description") as string | null;
     const start = formData.get("dateStarted") as string | null;
     const end = formData.get("dateEnded") as string | null;
-    const userId = formData.get("userId") as string | null;
     const roleId = formData.get("roleId") as string | null;
 
     let startDate: Date | undefined;
     let endDate: Date | undefined;
 
-    if (start && end) {
-      startDate = startOfDay(parseISO(start));
-      endDate = startOfDay(parseISO(end));
-    }
+    if (start) startDate = startOfDay(parseISO(start));
+    if (end) endDate = startOfDay(parseISO(end));
 
     const existingProject = await prisma.project.findUnique({
       where: { id },
@@ -107,19 +115,18 @@ export async function PATCH(
       if (filePath) {
         await deleteFile(filePath);
       }
-      filePath = await uploadFile(file, "user/");
+      filePath = await uploadFile(file, "project/");
     }
 
     const updatedProject = await prisma.project.update({
       where: { id },
       data: {
-        name: name || undefined,
-        description: description || undefined,
-        workOrder: filePath || undefined,
+        name: name ?? undefined,
+        description: description ?? undefined,
+        workOrder: filePath ?? undefined,
         start: startDate,
         end: endDate,
-        userId: userId || undefined,
-        roleId: roleId || undefined,
+        roleId: roleId ?? undefined,
         updatedAt: new Date(),
       },
     });
@@ -129,7 +136,7 @@ export async function PATCH(
       message: "Project updated successfully",
       data: updatedProject,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("PATCH PROJECT ERROR:", error);
     return NextResponse.json(
       { success: false, message: "Failed to update project" },

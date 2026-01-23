@@ -1,3 +1,4 @@
+// src/app/api/admin/users/[id]/role/route.ts
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
@@ -17,9 +18,10 @@ export async function PUT(
       );
     }
 
-    // 🔍 cek user
+    // cek user
     const user = await prisma.user.findUnique({
       where: { id: params.id },
+      include: { roles: true },
     });
 
     if (!user) {
@@ -29,7 +31,7 @@ export async function PUT(
       );
     }
 
-    // 🔍 cari role
+    // cek role
     const roleData = await prisma.role.findUnique({
       where: { name: role },
     });
@@ -41,18 +43,15 @@ export async function PUT(
       );
     }
 
-    // 🔥 TRANSACTION BIAR AMAN
-    await prisma.$transaction([
-      prisma.userRole.deleteMany({
-        where: { userId: params.id },
-      }),
-      prisma.userRole.create({
-        data: {
-          userId: params.id,
-          roleId: roleData.id,
+    // update role (schema kamu MANY-TO-MANY TANPA userRole table)
+    await prisma.user.update({
+      where: { id: params.id },
+      data: {
+        roles: {
+          set: [{ id: roleData.id }], // hapus role lama, set role baru
         },
-      }),
-    ]);
+      },
+    });
 
     return NextResponse.json({
       success: true,

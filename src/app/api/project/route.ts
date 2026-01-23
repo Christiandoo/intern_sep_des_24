@@ -14,25 +14,22 @@ export async function GET(req: Request) {
     // =========================
     if (id) {
       const project = await prisma.project.findUnique({
-  where: { id },
-  include: {
-    userRole: {
-      include: {
-        user: {
-          select: {
-            username: true,
-            name: true,
+        where: { id },
+        include: {
+          role: true,
+          assignment: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  name: true,
+                },
+              },
+            },
           },
         },
-        role: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    },
-  },
-});
+      });
 
       return NextResponse.json({ success: true, data: project });
     }
@@ -42,7 +39,13 @@ export async function GET(req: Request) {
     // =========================
     if (userId) {
       const projects = await prisma.project.findMany({
-        where: { userId },
+        where: {
+          assignment: {
+            some: {
+              userId,
+            },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
 
@@ -54,6 +57,20 @@ export async function GET(req: Request) {
     // =========================
     const projects = await prisma.project.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        role: true,
+        assignment: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     return NextResponse.json({ success: true, data: projects });
